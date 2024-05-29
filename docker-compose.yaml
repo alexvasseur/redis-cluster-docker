@@ -1,0 +1,78 @@
+services:
+  rec1:
+    image: redislabs/redis:${VERSION:-7.4.2-169}
+    restart: no
+    container_name: rec1
+    hostname: rec1
+    cap_add:
+      - ALL
+    ulimits:
+      memlock: -1
+    environment:
+      - BOOTSTRAP_ACTION=create_cluster
+      - BOOTSTRAP_USERNAME=${USERNAME}
+      - BOOTSTRAP_PASSWORD=${PASSWORD}
+      - BOOTSTRAP_CLUSTER_POLICY={"default_shards_placement":"sparse", "rack_aware":true}
+      - BOOTSTRAP_DMC_THREADS=2
+      - ALLOW_EMPTY_PASSWORD=yes
+      - BOOTSTRAP_NODE_RACK_ID=AZ1
+    ports:
+      - '12000:12000' # reserved for a sample Redis DB
+      - '8443:8443'   # webUI
+      - '9443:9443'   # API
+      - '8070:8070'   # prometheus
+      - '8001:8001'   # sentinel
+  rec2:
+    profiles:
+      - ha
+      - cluster
+    image: redislabs/redis:${VERSION:-7.4.2-169}
+    restart: no
+    container_name: rec2
+    hostname: rec2
+    depends_on:
+      - rec1
+    cap_add:
+      - ALL
+    ulimits:
+      memlock: -1
+    environment:
+      - BOOTSTRAP_ACTION=replace_join_cluster
+      - BOOTSTRAP_USERNAME=${USERNAME}
+      - BOOTSTRAP_PASSWORD=${PASSWORD}
+      - ALLOW_EMPTY_PASSWORD=yes
+      - NODE_UID=2
+      - BOOTSTRAP_NODE_RACK_ID=AZ2
+    ports:
+      - '12002:12000' # reserved for a sample Redis DB
+      - '8402:8443'   # webUI
+      - '9402:9443'   # API
+      - '8072:8070'   # prometheus
+      - '8002:8001'   # sentinel
+  rec3:
+    profiles:
+      - cluster
+    image: redislabs/redis:${VERSION:-7.4.2-169}
+    restart: no
+    container_name: rec3
+    hostname: rec3
+    depends_on:
+      - rec1
+    cap_add:
+      - ALL
+    ulimits:
+      memlock: -1
+    environment:
+      - BOOTSTRAP_ACTION=replace_join_cluster
+      - BOOTSTRAP_USERNAME=${USERNAME}
+      - BOOTSTRAP_PASSWORD=${PASSWORD}
+      - ALLOW_EMPTY_PASSWORD=yes
+      - NODE_UID=3
+      - BOOTSTRAP_NODE_RACK_ID=AZ3
+    ports:
+      - '12003:12000' # reserved for a sample Redis DB
+      - '8403:8443'   # webUI
+      - '9403:9443'   # API
+      - '8073:8070'   # prometheus
+      - '8003:8001'   # sentinel      
+
